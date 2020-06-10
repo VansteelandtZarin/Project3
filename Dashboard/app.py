@@ -3,6 +3,7 @@ from queue import Queue
 from Dashboard.pages import *
 from time import sleep
 
+
 # Classes
 
 class App(Tk):
@@ -11,8 +12,9 @@ class App(Tk):
 
         # Variables
         self.frames = {}
-        self.filepath = ''
-        self.filename = ''
+        # self.filepath = ''
+        self.filepath = 'C:\\Users\Robbe Brandse\\OneDrive - Hogeschool West-Vlaanderen\\School\\Semester 4\\Project 3\\python tests\\jana code\\kirstens versie\\Vuelosophy_IO\\input_H264\\Jam.h264'
+        self.filename = 'Jam'
         self.queue = None
         self.stepcount = 0
 
@@ -27,7 +29,7 @@ class App(Tk):
             self.frames[f] = frame
             frame.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-        self.show_frame(Select)
+        self.show_frame(Dashboard)
         self.create_queue()
 
     def show_frame(self, frame):
@@ -49,7 +51,7 @@ class App(Tk):
                 self.stepcount = 0
             elif "FILENAME:" in message:
                 self.filename = message.lstrip("FILENAME:")
-            elif "STEP:"in message:
+            elif "STEP:" in message:
                 step = message.lstrip("STEP:")
                 self.stepcount += 1
                 self.frames[Loading].message.config(text="Step %i/5: %s" % (self.stepcount, step))

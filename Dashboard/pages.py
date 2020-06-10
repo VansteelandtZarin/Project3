@@ -4,8 +4,13 @@ from tkinter import *
 from tkinter.font import *
 import PIL.Image, PIL.ImageTk
 from tkinter import filedialog
+
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from processing import app as process
+from processing import gantplot
 from threading import *
+import matplotlib.pyplot as plt
+import pandas as pd
 
 
 # Pages
@@ -37,12 +42,12 @@ class Select(Frame):
         self.message = Label(self.frame, text='No file selected', bg=self.background, fg=self.text, font=self.font_sm)
         self.message.place(relx=0, rely=0.4, relwidth=1)
 
-        self.select = Button(self.frame, text='Select a file', bd=0, bg=self.teal, fg='white', font=self.font_sm_bold, activebackground=self.light_teal, activeforeground='white', command=lambda: self.select_file())
+        self.select = Button(self.frame, text='Select a file', bd=0, bg=self.teal, fg='white', font=self.font_sm_bold, activebackground=self.light_teal, activeforeground='white',
+                             command=lambda: self.select_file())
         self.select.place(relx=0.4, rely=0.5, relwidth=0.2, height=80)
 
         self.proceed = Button(self.frame, text='Proceed', bd=0, bg=self.teal, fg='white', font=self.font_sm_bold,
-                             activebackground=self.light_teal, activeforeground='white', command=lambda: self.proceed_app(self.controller.filepath))
-
+                              activebackground=self.light_teal, activeforeground='white', command=lambda: self.proceed_app(self.controller.filepath))
 
     def select_file(self):
         self.controller.filepath = filedialog.askopenfilename(initialdir="/", title="Select file")
@@ -57,14 +62,11 @@ class Select(Frame):
             self.select.place(relx=0.25, rely=0.5, relwidth=0.2, height=80)
             self.proceed.place(relx=0.55, rely=0.5, relwidth=0.2, height=80)
 
-
     def proceed_app(self, filepath):
         self.controller.show_frame(Loading)
 
         t = Thread(target=lambda: process(filepath, self.controller.queue))
         t.start()
-
-
 
 
 class Loading(Frame):
@@ -98,6 +100,23 @@ class Dashboard(Frame):
         Frame.__init__(self, parent)
 
         self.controller = controller
+        self.background = '#f5f7f7'
+
+        self.frame = Frame(self, bg=self.background)
+        self.frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+        # self.plot = FigureCanvasTkAgg(plt.figure())
+        # self.plot.place(relx=0.05, rely=0.55, relwidth=0.9, relheight=0.4)
+        self.plotgant()
+
+
+    def plotgant(self):
+        body = pd.read_pickle('./Vuelosophy_IO/output_PKL/pickled_df_body_vid%s.pkl' % self.controller.filename)
+        print(body)
+        gant = gantplot(body, self.controller.filename)
+        # gant.show()
+        self.plot = FigureCanvasTkAgg(gant.figure)
+        self.plot.draw()
+        self.plot.get_tk_widget().place(relx=0.05, rely=0.55, relwidth=0.9, relheight=0.4)
 
     def video(self, video_path=""):
 
@@ -108,7 +127,7 @@ class Dashboard(Frame):
             # Create a Video object
             self.video = Video(self.video_path)
 
-            self.canvas = Canvas(self, width=self.video.width, height=self.video.height)
+            self.canvas = Canvas(self.frame, width=self.video.width, height=self.video.height)
             self.canvas.place(relx='0.05', rely='0.05', relwidth='0.5', relheight='0.5')
 
             self.delay = 15

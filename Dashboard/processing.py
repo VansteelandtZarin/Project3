@@ -44,8 +44,8 @@ def app(filepath, queue):
     df_header, df_body = header_body_split(json_to_pandas_df(path_json, file_json))
 
     # Pickle both dataframes
-    # queue.put("STEP: Pickle dataframe (header)")
-    # pd.to_pickle(df_header, path_pkl + 'pickled_df_header_' + file_pkl)
+    queue.put("STEP: Pickle dataframe (header)")
+    pd.to_pickle(df_header, path_pkl + 'pickled_df_header_' + file_pkl)
     # pd.to_pickle(df_body, path_pkl + 'pickled_df_body_' + file_pkl)
 
     # Create Frame object
@@ -388,5 +388,6 @@ def gantplot(df_body, filename):
         output = [(row['frame_number'], 1) for index, row in val.iterrows()]
         nr = list(viewed_classes).index(key)
         gnt.broken_barh(output, (nr * 10 + 5, 10), facecolors=colors[nr])
-
-    plt.savefig(filename + "_gantplot.png")
+    # plt.show()
+    return gnt
+    # plt.savefig(filename + "_gantplot.png")
