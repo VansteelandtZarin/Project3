@@ -40,11 +40,9 @@ class App(Tk):
         t.start()
 
     def handle_queue(self):
-
-        message = self.queue.get()
-
-        while message != "END_PROCESSING":
-            if message == "END PROCESSING":
+        while True:
+            message = self.queue.get()
+            if message == "END_PROCESSING":
                 self.show_frame(Dashboard)
                 self.frames[Dashboard].video("./Vuelosophy_IO/output_MP4/%s.mp4" % self.filename)
             elif "START_PROCESSING" in message:
@@ -56,7 +54,6 @@ class App(Tk):
                 self.stepcount += 1
                 self.frames[Loading].message.config(text="Step %i/5: %s" % (self.stepcount, step))
                 sleep(1)
-            message = self.queue.get()
 
 
 # App
