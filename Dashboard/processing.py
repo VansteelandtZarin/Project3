@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 # App
 
 def app(filepath, queue):
-
     queue.put("START_PROCESSING")
 
     # Output paths
@@ -27,7 +26,7 @@ def app(filepath, queue):
 
     # filename = os.listdir('./Vuelosophy_IO/input_H264/')[0].rstrip(".h264")
     filename = filepath.split("/")
-    filename = filename[len(filename)-1].rstrip(".h264")
+    filename = filename[len(filename) - 1].rstrip(".h264")
 
     file_h264 = filepath
     file_mp4 = filename + '.mp4'
@@ -47,7 +46,7 @@ def app(filepath, queue):
     # Pickle both dataframes
     queue.put("STEP: Pickle dataframe (header)")
     pd.to_pickle(df_header, path_pkl + 'pickled_df_header_' + file_pkl)
-    pd.to_pickle(df_body, path_pkl + 'pickled_df_body_' + file_pkl)
+    # pd.to_pickle(df_body, path_pkl + 'pickled_df_body_' + file_pkl)
 
     # Create Frame object
     Frame.width = df_header['frame_width']
@@ -64,10 +63,10 @@ def app(filepath, queue):
 
     # Preprocessing
     queue.put("STEP: Preprocessing")
-    df_body = preprocess(df_body, Unity, Frame, path_pkl, file_pkl)
-
-
-    # df_body = pd.read_pickle(path_pkl + 'pickled_df_body_' + file_pkl)
+    if os.path.exists(path_pkl + 'pickled_df_body_preprocessed' + file_pkl):
+        df_body = pd.read_pickle(path_pkl + 'pickled_df_body_preprocessed' + file_pkl)
+    else:
+        df_body = preprocess(df_body, Unity, Frame, path_pkl, file_pkl)
 
     Video.window_name = 'eye tracking (Vuelosophy)'
     Video.nr_of_frames = Frame.total - 2
@@ -76,17 +75,21 @@ def app(filepath, queue):
 
     # Processing video
     queue.put("STEP:Creating video")
-    df_body = create_video(df_body, Video, Frame)
-
-    pd.to_pickle(df_body, path_pkl + 'pickled_df_body_' + file_pkl)
-
+    print(path_mp4 + filename + file_mp4)
+    if os.path.exists(path_pkl + 'pickled_df_body_vid' + file_pkl) and os.path.exists(path_mp4 + file_mp4):
+        df_body = pd.read_pickle(path_pkl + 'pickled_df_body_vid' + file_pkl)
+    else:
+        df_body = create_video(df_body, Video, Frame)
+        pd.to_pickle(df_body, path_pkl + 'pickled_df_body_vid' + file_pkl)
+    print("done vid processing")
     # Countplot
-    sns.countplot(data=df_body, x="object")
+    # sns.countplot(data=df_body, x="object")
 
     # Timelineplot
-    gantplot(df_body, filename)
+    # gantplot(df_body, filename)
 
     queue.put("END_PROCESSING")
+
 
 class Frame:
     width = 0
@@ -111,7 +114,6 @@ class Video:
 
 
 def h264_to_json(path_h264, file_h264, path_json, file_json):
-
     # Open the file in Read Binary mode and read it
     with open(path_h264 + file_h264, 'rb') as f:
         data = f.read()
@@ -133,7 +135,6 @@ def h264_to_json(path_h264, file_h264, path_json, file_json):
 
 
 def json_to_pandas_df(path_json, file_json):
-
     # Open JSON-file
     with open(path_json + file_json) as f:
         data = json.load(f)
@@ -146,7 +147,6 @@ def json_to_pandas_df(path_json, file_json):
 
 
 def header_body_split(df_all):
-
     # Locate header, rename it and save it
 
     df_header = df_all.loc[[0], ['width', 'height', 'frame_rate', 'frame_total']]
@@ -155,7 +155,6 @@ def header_body_split(df_all):
     df_header['frame_width'] = df_header['frame_width'].astype(int)
     df_header['frame_height'] = df_header['frame_height'].astype(int)
     df_header['frame_total'] = df_header['frame_total'].astype(int)
-
 
     # Locate body, rename it and save it
     df_body = df_all[['num', 'ft.x', 'ft.y', 'ft.z']]
@@ -170,7 +169,6 @@ def header_body_split(df_all):
 
 
 def preprocess(df_body, unity, frame, path_pkl, file_pkl):
-
     # Convert 3D coords to 2D coords
     df_body = coord_3d_to_2d(df_body, unity, frame)
 
@@ -178,13 +176,12 @@ def preprocess(df_body, unity, frame, path_pkl, file_pkl):
     df_body = get_fixations(df_body)
 
     # Pickle dataframe body
-    pd.to_pickle(df_body, path_pkl + 'pickled_df_body_' + file_pkl)
+    pd.to_pickle(df_body, path_pkl + 'pickled_df_body_preprocessed' + file_pkl)
 
     return df_body
 
 
 def coord_3d_to_2d(df_body, unity, frame):
-
     # Variables
     unity_width_half = unity.width / 2
     unity_height_half = unity.height / 2
@@ -233,7 +230,6 @@ def map_value(value, left_min, left_max, right_min, right_max):
 
 
 def get_fixations(df_body):
-
     # Position the data
     df_body['px_eye_2d_x2'] = df_body['px_eye_2d_x'].shift(-1)
     df_body['px_eye_2d_y2'] = df_body['px_eye_2d_y'].shift(-1)
@@ -263,7 +259,6 @@ def row_fixation(row, threshhold):
 
 
 def create_video(df_body, Video, Frame):
-
     # Variables
     current_frame = 0
 
@@ -282,7 +277,7 @@ def create_video(df_body, Video, Frame):
 
     # Prepare object detection
     classes = ["Jam", "Knife", "Bread", "Choco"]
-    net = cv.dnn.readNet("Weights/TinyWeightsZarinV2.weights", "Configs/TinyConfigZarin.cfg")
+    net = cv.dnn.readNet("Weights/TinyWeightsZarinV4.weights", "Configs/TinyConfigZarin.cfg")
     layer_names = net.getLayerNames()
     output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
     colors = np.random.uniform(0, 255, size=(len(classes), 3))
@@ -323,7 +318,6 @@ def create_video(df_body, Video, Frame):
                         confidences.append(float(confidence))
                         class_ids.append(class_id)
 
-
             indexes = cv.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
 
             for i in range(len(boxes)):
@@ -360,11 +354,9 @@ def create_video(df_body, Video, Frame):
         else:
             break
 
-
-
     cap.release()
     writer.release()
-    # cv.destroyAllWindows()
+    cv.destroyAllWindows()
     df_body['object'] = df_body.apply(lambda x: name_object(x), axis=1)
     return df_body
 
@@ -396,5 +388,6 @@ def gantplot(df_body, filename):
         output = [(row['frame_number'], 1) for index, row in val.iterrows()]
         nr = list(viewed_classes).index(key)
         gnt.broken_barh(output, (nr * 10 + 5, 10), facecolors=colors[nr])
-
-    plt.savefig(filename + "_gantplot.png")
+    # plt.show()
+    return gnt
+    # plt.savefig(filename + "_gantplot.png")
